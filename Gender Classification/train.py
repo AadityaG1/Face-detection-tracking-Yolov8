@@ -2,7 +2,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.utils import to_categorical, plot_model
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import BatchNormalization, Conv2D, MaxPooling2D, Activation, Flatten, Dropout, Dense
 from tensorflow.keras import backend as K
 from sklearn.model_selection import train_test_split
@@ -23,7 +23,7 @@ data = []
 labels = []
 
 # load image files from the dataset
-image_files = [f for f in glob.glob(r'C:\Files\gender_dataset_face' + "/**/*", recursive=True) if not os.path.isdir(f)]
+image_files = [f for f in glob.glob(r'gender_dataset_face' + "/**/*", recursive=True) if not os.path.isdir(f)]
 random.shuffle(image_files)
 
 # converting images to arrays and labelling the categories
@@ -48,8 +48,7 @@ data = np.array(data, dtype="float") / 255.0
 labels = np.array(labels)
 
 # split dataset for training and validation
-(trainX, testX, trainY, testY) = train_test_split(data, labels, test_size=0.2,
-                                                  random_state=42)
+(trainX, testX, trainY, testY) = train_test_split(data, labels, test_size=0.2, random_state=42)
 
 trainY = to_categorical(trainY, num_classes=2) # [[1, 0], [0, 1], [0, 1], ...]
 testY = to_categorical(testY, num_classes=2)
@@ -109,12 +108,15 @@ def build(width, height, depth, classes):
 
     return model
 
+
 # build model
-model = build(width=img_dims[0], height=img_dims[1], depth=img_dims[2],
-                            classes=2)
+model = build(width=img_dims[0], height=img_dims[1], depth=img_dims[2], classes=2)
+
+# Check its architecture
+model.summary()
 
 # compile the model
-opt = Adam(lr=lr, decay=lr/epochs)
+opt = Adam(learning_rate=lr)
 model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
 
 # train the model
@@ -125,6 +127,7 @@ H = model.fit_generator(aug.flow(trainX, trainY, batch_size=batch_size),
 
 # save the model to disk
 model.save('gender_detection.model')
+model.save('gender_detection.h5')
 
 # plot training/validation loss/accuracy
 plt.style.use("ggplot")
@@ -132,8 +135,8 @@ plt.figure()
 N = epochs
 plt.plot(np.arange(0,N), H.history["loss"], label="train_loss")
 plt.plot(np.arange(0,N), H.history["val_loss"], label="val_loss")
-plt.plot(np.arange(0,N), H.history["acc"], label="train_acc")
-plt.plot(np.arange(0,N), H.history["val_acc"], label="val_acc")
+plt.plot(np.arange(0,N), H.history["accuracy"], label="train_acc")
+plt.plot(np.arange(0,N), H.history["val_accuracy"], label="val_acc")
 
 plt.title("Training Loss and Accuracy")
 plt.xlabel("Epoch #")
